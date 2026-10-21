@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0712">
+<title>樱 · 花信 —— 手势花开花落</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B8%3C/text%3E%3C/svg%3E">
+<style>
+  :root{
+    --ink:#f7e9ef;
+    --ink-dim:rgba(247,233,239,.60);
+    --ink-faint:rgba(247,233,239,.38);
+    --accent:#ffb3cd;
+    --accent2:#ffd8b4;
+    --line:rgba(255,200,220,.16);
+    --glass:linear-gradient(160deg, rgba(44,20,37,.72), rgba(18,8,17,.62));
+    --shadow:0 24px 70px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;overflow:hidden;background:#0c0712;color:var(--ink);
+    font-family:"Microsoft YaHei UI","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+    -webkit-font-smoothing:antialiased;user-select:none;
+  }
+  #scene{position:fixed;inset:0;width:100%;height:100%;display:block}
+  #scrim{position:fixed;inset:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 50% 42%, rgba(0,0,0,0) 40%, rgba(8,3,12,.34) 74%, rgba(5,2,8,.72) 100%),
+      linear-gradient(180deg, rgba(10,4,14,.52) 0%, rgba(10,4,14,0) 18%),
+      linear-gradient(0deg, rgba(8,3,12,.52) 0%, rgba(8,3,12,0) 16%);
+  }
+  .kai{font-family:"KaiTi","STKaiti","Kaiti SC","Songti SC","STSong",serif}
+
+  /* ---------- brand ---------- */
+  .brand{position:fixed;left:clamp(16px,3.2vw,46px);top:clamp(14px,2.8vh,36px);pointer-events:none;z-index:10}
+  .brand h1{
+    margin:0;font-size:clamp(24px,3.3vw,42px);font-weight:400;letter-spacing:.06em;
+    background:linear-gradient(100deg,#fff8fc 0%,#ffbfda 48%,#ffad88 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 3px 18px rgba(0,0,0,.45));
+  }
+  .brand p{margin:.55em 0 0;font-size:clamp(11px,1.05vw,13px);letter-spacing:.32em;color:var(--ink-dim)}
+
+  /* ---------- panel ---------- */
+  .panel{
+    position:fixed;right:clamp(14px,2.4vw,32px);top:clamp(14px,2.8vh,34px);z-index:12;
+    width:min(308px,42vw);padding:16px 18px 14px;border-radius:18px;
+    background:var(--glass);border:1px solid var(--line);box-shadow:var(--shadow);
+    backdrop-filter:blur(18px) saturate(125%);-webkit-backdrop-filter:blur(18px) saturate(125%);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);margin-bottom:10px}
+  .row:last-child{margin-bottom:0}
+  .dot{width:8px;height:8px;border-radius:50%;background:#7c6b78;box-shadow:0 0 0 3px rgba(255,255,255,.05);flex:none}
+  .dot.loading{background:#ffcf7a;animation:pulse 1s infinite}
+  .dot.ready{background:#8ef0b4;box-shadow:0 0 10px #5be08e88}
+  .dot.error{background:#ff8a8a}
+  @keyframes pulse{50%{opacity:.35}}
+  #camText{color:var(--ink-dim);font-size:12.5px}
+  .gest{display:flex;align-items:center;gap:10px;margin:2px 0 12px}
+  #gestIcon{font-size:22px;line-height:1;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+  #gestText{font-size:14px;letter-spacing:.06em}
+  .open-dots{display:flex;gap:5px;margin-left:auto}
+  .open-dots i{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.14);transition:background .16s,box-shadow .16s}
+  .open-dots i.on{background:var(--accent);box-shadow:0 0 8px rgba(255,179,205,.8)}
+  .bloomrow{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--ink-dim)}
+  .bar{flex:1;height:5px;border-radius:99px;background:rgba(255,255,255,.1);overflow:hidden}
+  .bar i{display:block;height:100%;width:0%;border-radius:99px;
+    background:linear-gradient(90deg,#ff9fc4,#ffc6b0);box-shadow:0 0 12px rgba(255,160,190,.7)}
+  #bloomNum{min-width:38px;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink)}
+  .tools{display:flex;gap:8px;margin-top:13px}
+  .tool{
+    flex:1;border:1px solid var(--line);background:rgba(255,255,255,.045);color:var(--ink);
+    border-radius:11px;padding:8px 6px;font-size:12px;letter-spacing:.05em;cursor:pointer;
+    transition:background .2s, border-color .2s, transform .2s;font-family:inherit;
+  }
+  .tool:hover{background:rgba(255,255,255,.1);border-color:rgba(255,190,215,.34)}
+  .tool:active{transform:scale(.97)}
+
+  /* ---------- legend ---------- */
+  .legend{
+    position:fixed;left:50%;bottom:clamp(16px,3vh,34px);transform:translateX(-50%);z-index:11;
+    display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:92vw;
+    transition:opacity .5s ease;
+  }
+  .chip{
+    display:flex;align-items:center;gap:8px;padding:9px 15px;border-radius:999px;
+    background:rgba(24,11,21,.5);border:1px solid var(--line);backdrop-filter:blur(12px);
+    font-size:12.5px;color:var(--ink-dim);letter-spacing:.04em;white-space:nowrap;
+  }
+  .chip b{color:var(--ink);font-weight:500}
+  .chip span.e{font-size:15px;filter:drop-shadow(0 1px 4px rgba(0,0,0,.5))}
+
+  /* ---------- camera preview ---------- */
+  .cam{
+    position:fixed;right:clamp(14px,2.4vw,32px);bottom:clamp(14px,2.6vh,30px);z-index:12;
+    width:clamp(148px,16vw,208px);border-radius:16px;overflow:hidden;
+    background:rgba(15,7,14,.72);border:1px solid var(--line);box-shadow:var(--shadow);
+    opacity:0;visibility:hidden;transform:translateY(10px) scale(.98);
+    transition:opacity .45s ease, transform .45s ease, visibility .45s;
+  }
+  .cam.show{opacity:1;visibility:visible;transform:none}
+  .cam canvas{display:block;width:100%;height:auto;filter:saturate(1.05)}
+  .cam .cap{
+    position:absolute;left:0;right:0;top:0;display:flex;align-items:center;gap:6px;
+    padding:7px 9px;font-size:10.5px;letter-spacing:.1em;color:rgba(255,235,243,.82);
+    background:linear-gradient(180deg,rgba(10,4,12,.75),rgba(10,4,12,0));
+  }
+  .cam .cap .d{width:6px;height:6px;border-radius:50%;background:#8ef0b4;box-shadow:0 0 8px #6ee79e}
+  .cam .cap .d.wait{background:#ffcf7a;box-shadow:0 0 8px #ffcf7a}
+  #btnCamHide{margin-left:auto;border:0;background:rgba(255,255,255,.12);color:#fff;
+    border-radius:7px;font-size:10px;padding:3px 7px;cursor:pointer;font-family:inherit}
+
+  /* ---------- intro ---------- */
+  #intro{
+    position:fixed;inset:0;z-index:60;display:grid;place-items:center;padding:20px;
+    background:radial-gradient(90% 80% at 50% 40%, rgba(24,9,26,.34), rgba(7,3,11,.82));
+    transition:opacity .65s ease, visibility .65s;
+  }
+  #intro.hidden{opacity:0;visibility:hidden;pointer-events:none}
+  .card{
+    width:min(600px,94vw);padding:clamp(26px,3.6vw,46px);border-radius:28px;
+    background:linear-gradient(165deg, rgba(52,24,44,.80), rgba(19,8,18,.76));
+    border:1px solid rgba(255,205,225,.18);box-shadow:0 40px 100px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.09);
+    backdrop-filter:blur(20px) saturate(130%);-webkit-backdrop-filter:blur(20px) saturate(130%);
+    animation:rise .95s cubic-bezier(.2,.85,.2,1) both;
+  }
+  @keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+  .card .eyebrow{font-size:11px;letter-spacing:.42em;color:var(--accent);opacity:.85;margin-bottom:14px}
+  .card h1{margin:0;font-size:clamp(34px,6vw,56px);font-weight:400;letter-spacing:.06em;line-height:1.1;
+    background:linear-gradient(110deg,#fff8fb 10%,#ffc6dd 58%,#ffb393 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .card .lead{margin:16px 0 22px;font-size:14.5px;line-height:1.9;color:var(--ink-dim);letter-spacing:.03em}
+  .glist{display:grid;gap:2px;margin:0 0 26px;padding:0;list-style:none}
+  .glist li{display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px dashed rgba(255,200,220,.12);font-size:13.5px;color:var(--ink)}
+  .glist li:last-child{border-bottom:0}
+  .glist .e{font-size:22px;width:34px;text-align:center;filter:drop-shadow(0 2px 8px rgba(0,0,0,.55))}
+  .glist small{color:var(--ink-faint);font-size:12px;margin-left:auto;letter-spacing:.02em;text-align:right}
+  .btnrow{display:flex;gap:12px;flex-wrap:wrap}
+  .btn{
+    border:0;border-radius:999px;padding:14px 28px;font-size:14.5px;letter-spacing:.08em;cursor:pointer;
+    font-family:inherit;transition:transform .2s, box-shadow .25s, background .25s, border-color .25s;
+  }
+  .btn.primary{
+    background:linear-gradient(120deg,#ff9cc0 0%,#ffc9a6 100%);color:#3d1226;font-weight:600;
+    box-shadow:0 10px 34px rgba(255,140,180,.38), inset 0 1px 0 rgba(255,255,255,.5);
+  }
+  .btn.primary:hover{transform:translateY(-2px);box-shadow:0 16px 42px rgba(255,140,180,.5), inset 0 1px 0 rgba(255,255,255,.5)}
+  .btn.ghost{background:rgba(255,255,255,.06);border:1px solid rgba(255,210,230,.22);color:var(--ink)}
+  .btn.ghost:hover{background:rgba(255,255,255,.12);border-color:rgba(255,190,215,.4);transform:translateY(-2px)}
+  .btn:active{transform:scale(.98)}
+  .fine{margin:20px 0 0;font-size:11.5px;line-height:1.8;color:var(--ink-faint);letter-spacing:.02em}
+  .fine b{color:var(--ink-dim);font-weight:500}
+  .spinner{width:15px;height:15px;border-radius:50%;border:2px solid rgba(255,255,255,.22);border-top-color:#ffb3cd;
+    display:inline-block;vertical-align:-2px;margin-right:8px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- modal / toast / banner ---------- */
+  .modal{position:fixed;inset:0;z-index:70;display:none;place-items:center;padding:20px;
+    background:rgba(6,2,9,.66);backdrop-filter:blur(4px)}
+  .modal.show{display:grid}
+  .modal .card{width:min(560px,94vw);animation:rise .5s ease both}
+  .modal h2{margin:0 0 16px;font-size:26px;font-weight:400;letter-spacing:.12em}
+  .modal p,.modal li{font-size:13px;line-height:1.95;color:var(--ink-dim)}
+  .modal ul{padding-left:18px;margin:0 0 18px}
+  .modal b{color:var(--ink)}
+  .modal code{background:rgba(255,255,255,.08);border:1px solid rgba(255,210,230,.16);
+    border-radius:6px;padding:1px 6px;font-size:12px;color:#ffd7e6}
+  #toast{
+    position:fixed;left:50%;bottom:clamp(84px,12vh,120px);transform:translate(-50%,12px);z-index:80;
+    padding:11px 20px;border-radius:999px;font-size:13px;letter-spacing:.04em;
+    background:rgba(30,13,26,.88);border:1px solid var(--line);color:var(--ink);
+    box-shadow:0 14px 40px rgba(0,0,0,.5);backdrop-filter:blur(12px);
+    opacity:0;visibility:hidden;transition:opacity .35s, transform .35s, visibility .35s;max-width:88vw;text-align:center;
+  }
+  #toast.show{opacity:1;visibility:visible;transform:translate(-50%,0)}
+  #fileBanner{
+    position:fixed;left:50%;top:0;transform:translateX(-50%);z-index:65;display:none;
+    margin-top:14px;padding:9px 16px;border-radius:0 0 14px 14px;font-size:12px;letter-spacing:.02em;
+    background:rgba(120,52,40,.9);border:1px solid rgba(255,180,140,.3);color:#ffe6d8;
+    box-shadow:0 12px 30px rgba(0,0,0,.45);max-width:94vw;text-align:center;line-height:1.6;
+    align-items:center;gap:10px;
+  }
+  #fileBanner.show{display:flex}
+  #fileBanner button{border:1px solid rgba(255,210,180,.45);background:rgba(255,255,255,.12);color:#fff3e8;
+    border-radius:999px;padding:4px 12px;font-size:11.5px;cursor:pointer;font-family:inherit;white-space:nowrap}
+  #fileBanner button:hover{background:rgba(255,255,255,.22)}
+  #loadingVeil{
+    position:fixed;inset:0;z-index:55;display:none;place-items:center;pointer-events:none;
+    background:radial-gradient(60% 50% at 50% 50%, rgba(10,4,14,.55), rgba(10,4,14,0));
+  }
+  #loadingVeil.show{display:grid}
+  #loadingVeil .box{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-dim);
+    padding:14px 22px;border-radius:999px;background:rgba(24,10,21,.72);border:1px solid var(--line);
+    backdrop-filter:blur(12px)}
+
+  .sr-video{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.001;pointer-events:none;z-index:-1}
+
+  @media (max-width:820px){
+    .brand p{display:none}
+    .panel{width:auto;max-width:64vw;padding:12px 14px}
+    .panel .tools{gap:6px}
+    .tool{padding:7px 4px;font-size:11px}
+    .legend{bottom:12px;gap:6px}
+    .chip{padding:7px 11px;font-size:11px}
+    .cam{width:132px;bottom:12px;right:12px}
+    .card{padding:24px 22px}
+    .glist small{display:none}
+  }
+  @media (max-width:680px){
+    .legend{display:none}
+    .panel{max-width:62vw}
+    .brand h1{font-size:22px}
+    .brand p{font-size:10px}
+  }
+  @media (max-height:520px){
+    .legend{display:none}
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+<div id="scrim"></div>
+
+<div class="brand">
+  <h1 class="kai">樱 · 花信</h1>
+  <p>开时见喜 · 落时见风</p>
+</div>
+
+<div class="panel" id="panel">
+  <div class="row"><span class="dot" id="camDot"></span><span id="camText">摄像头未开启</span></div>
+  <div class="gest"><span id="gestIcon">🖐</span><span id="gestText">等待手势</span>
+    <span class="open-dots" id="openDots"><i></i><i></i><i></i><i></i><i></i></span>
+  </div>
+  <div class="bloomrow"><span>花开</span><div class="bar"><i id="bloomBar"></i></div><span id="bloomNum">0%</span></div>
+  <div class="tools">
+    <button class="tool" id="btnCam2">摄像头</button>
+    <button class="tool" id="btnPrev">预览</button>
+    <button class="tool" id="btnHelp2">说明</button>
+  </div>
+</div>
+
+<div class="legend" id="legend">
+  <div class="chip"><span class="e">🖐</span><b>张开五指</b> · 花开</div>
+  <div class="chip"><span class="e">✊</span><b>握拳</b> · 花落</div>
+  <div class="chip"><span class="e">👋</span><b>挥动手掌</b> · 起风</div>
+</div>
+
+<div class="cam" id="camCard">
+  <canvas id="preview" width="240" height="180"></canvas>
+  <div class="cap"><span class="d" id="prevDot"></span><span id="prevText">摄像头预览</span>
+    <button id="btnCamHide">隐藏</button>
+  </div>
+</div>
+
+<video class="sr-video" id="video" playsinline muted autoplay></video>
+
+<div id="fileBanner">
+  <span>直接打开文件时浏览器不允许使用摄像头</span>
+  <button id="btnFileHelp">怎么解决？</button>
+</div>
+
+<div id="intro">
+  <div class="card">
+    <div class="eyebrow">HAND · BLOSSOM · FALL</div>
+    <h1 class="kai">樱 · 花信</h1>
+    <p class="lead">举起手，对着摄像头 —— 张开手掌，樱花会慢慢开满枝头；<br>握紧拳头，花瓣就一片片落下来。</p>
+    <ul class="glist">
+      <li><span class="e">🖐</span><span>张开五指</span><small>花开 · 张得越开越盛</small></li>
+      <li><span class="e">✊</span><span>握紧拳头</span><small>花落 · 花瓣随风飘散</small></li>
+      <li><span class="e">👋</span><span>快速挥手</span><small>起风 · 吹落一阵花雨</small></li>
+    </ul>
+    <div class="btnrow">
+      <button class="btn primary" id="btnCam">开启摄像头</button>
+      <button class="btn ghost" id="btnMouse">用鼠标试试</button>
+    </div>
+    <p class="fine"><b>小提示</b>：手掌离镜头约 40–70 cm，光线充足、背景干净时识别更准。<br>摄像头画面只在本机浏览器里计算，<b>不会上传、不会保存</b>。</p>
+  </div>
+</div>
+
+<div id="help" class="modal">
+  <div class="card">
+    <h2 class="kai">怎么玩</h2>
+    <ul>
+      <li><b>🖐 张开手掌</b> —— 花开。手张开的程度会实时影响花开程度，半开就是半开的花。</li>
+      <li><b>✊ 握拳</b> —— 花落。花苞合拢，花瓣从枝头脱落、飘下。</li>
+      <li><b>👋 挥手</b> —— 起风，花瓣被卷着横飞。</li>
+      <li><b>没有摄像头？</b> 鼠标上下移动控制花开，点一下屏幕撒花瓣；键盘 ↑ ↓ 微调，空格撒花，C 开关摄像头。</li>
+    </ul>
+    <p><b>识别不准时</b>：把手抬到镜头正前方，整只手（含指尖）都在画面里；避开逆光；背景别太杂；手掌大小约占画面 1/3。</p>
+    <p><b>打不开摄像头</b>：浏览器要求 localhost 或 https 环境。请双击文件夹里的「启动樱花.cmd」，它会启动本地服务器并自动打开页面。</p>
+    <div class="btnrow" style="margin-top:20px">
+      <button class="btn ghost" id="btnHelpClose">知道了</button>
+    </div>
+  </div>
+</div>
+
+<div id="fileTip" class="modal">
+  <div class="card">
+    <h2 class="kai">摄像头需要「本地服务器」</h2>
+    <p>你现在是直接双击打开的 HTML（地址栏是 <code>file:///…</code>），浏览器安全策略不允许网页读取摄像头。</p>
+    <ul>
+      <li><b>方法一（最简单）</b>：回到 <code>sakura</code> 文件夹，双击 <b>「启动樱花.cmd」</b>。它会启动 <code>http://127.0.0.1:8765</code> 并自动打开页面，摄像头就能用了。</li>
+      <li><b>方法二</b>：把它部署到你自己的服务器，用 <b>https 域名</b> 访问（浏览器同样要求安全连接，所以需要域名 + 证书）。</li>
+    </ul>
+    <p style="margin-top:-4px">现在也可以先用鼠标玩：上下移动 = 花开程度，点一下 = 撒花瓣。</p>
+    <div class="btnrow" style="margin-top:20px">
+      <button class="btn ghost" id="btnFileTipClose">先用鼠标模式</button>
+      <button class="btn primary" id="btnFileTipHelp">查看玩法说明</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="loadingVeil"><div class="box"><span class="spinner"></span><span id="veilText">正在加载手势模型…</span></div></div>
+
+<script>
+'use strict';
+/* =========================================================================
+   樱 · 花信 —— 手势控制的花开花落
+   -------------------------------------------------------------------------
+   纯前端：Canvas 2D 程序化樱花 + MediaPipe Hands 手部关键点
+   手势：张开手掌 → 花开；握拳 → 花落；挥手 → 起风
+   ========================================================================= */
+
+/* ---------------- 基础工具 ---------------- */
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smoothstep = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
+const deg = (d) => (d * Math.PI) / 180;
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function qPoint(x0, y0, cx, cy, x1, y1, t) {
+  const mt = 1 - t;
+  return { x: mt * mt * x0 + 2 * mt * t * cx + t * t * x1, y: mt * mt * y0 + 2 * mt * t * cy + t * t * y1 };
+}
+function qTangent(x0, y0, cx, cy, x1, y1, t) {
+  const mt = 1 - t;
+  return { x: 2 * mt * (cx - x0) + 2 * t * (x1 - cx), y: 2 * mt * (cy - y0) + 2 * t * (y1 - cy) };
+}
+
+/* ---------------- 全局状态 ---------------- */
+const S = {
+  W: 0, H: 0, dpr: 1,
+  t: 0, lastFrame: 0,
+  ready: false,
+  bloom: 0.72, target: 0.72,
+  mode: 'demo',                 // demo | mouse | camera
+  wind: 0,
+  petals: [], petalAcc: 0,
+  motes: [],
+  flowers: [], branches: [],
+  bg: null, tree: null,
+  sprites: null,
+  light: null,
+  introOpen: true,
+  lastHud: 0,
+  pointerTarget: null,
+  hand: {
+    present: false, raw: 0.4, smooth: 0.4, fist: false,
+    lastSeen: -99, lastSeenT: 0,
+    lastX: null, lastY: null, vx: 0, vy: 0,
+    lastFistAt: -99, lastGustAt: -99,
+    landmarks: null, smoothLms: null, missingSince: 0,
+  },
+  cameraOn: false, cameraStarting: false, rafSend: 0, paused: false,
+  stream: null,
+};
+
+const canvas = document.getElementById('scene');
+const ctx = canvas.getContext('2d', { alpha: false });
+const videoEl = document.getElementById('video');
+const previewEl = document.getElementById('preview');
+const previewCtx = previewEl.getContext('2d');
+
+const DOM = {
+  camDot: document.getElementById('camDot'),
+  camText: document.getElementById('camText'),
+  gestIcon: document.getElementById('gestIcon'),
+  gestText: document.getElementById('gestText'),
+  openDots: Array.from(document.getElementById('openDots').children),
+  bloomBar: document.getElementById('bloomBar'),
+  bloomNum: document.getElementById('bloomNum'),
+  intro: document.getElementById('intro'),
+  camCard: document.getElementById('camCard'),
+  prevDot: document.getElementById('prevDot'),
+  prevText: document.getElementById('prevText'),
+  toast: document.getElementById('toast'),
+  help: document.getElementById('help'),
+  fileTip: document.getElementById('fileTip'),
+  veil: document.getElementById('loadingVeil'),
+  veilText: document.getElementById('veilText'),
+  fileBanner: document.getElementById('fileBanner'),
+  legend: document.getElementById('legend'),
+  panel: document.getElementById('panel'),
+  btnCam2: document.getElementById('btnCam2'),
+};
+
+/* =========================================================================
+   1. 预渲染精灵：樱花花朵（18 个开合阶段 × 3 种色调）、花瓣、光晕
+   ========================================================================= */
+const STAGES = 18;
+const TONES = [
+  { base: '#d4779b', mid: '#ffc9df', tip: '#fff9fc' },
+  { base: '#dd8dae', mid: '#ffdceb', tip: '#ffffff' },
+  { base: '#c8678f', mid: '#ffb6d2', tip: '#fff2f8' },
+];
+const SPR = 128;
+
+function petalPath(g, len, wid, open) {
+  g.beginPath();
+  g.moveTo(0, 0);
+  g.bezierCurveTo(wid * 1.02, -len * 0.22, wid * 1.05, -len * 0.64, wid * 0.40, -len * 0.95);
+  g.quadraticCurveTo(0, -len * (0.82 + 0.06 * open), -wid * 0.40, -len * 0.95);
+  g.bezierCurveTo(-wid * 1.05, -len * 0.64, -wid * 1.02, -len * 0.22, 0, 0);
+  g.closePath();
+}
+
+function drawFlower(g, tone, open) {
+  const isBud = open < 0.26;
+  const len = lerp(13, 45, Math.pow(open, 0.85));
+  const wid = len * (isBud ? 0.52 : lerp(0.37, 0.46, open));
+  const spread = deg(lerp(15, 72, Math.pow(open, 0.9)));
+
+  // 柔光
+  if (open > 0.22) {
+    const gl = g.createRadialGradient(0, 0, 3, 0, 0, 62);
+    gl.addColorStop(0, 'rgba(255,210,228,' + (0.24 * open).toFixed(3) + ')');
+    gl.addColorStop(0.45, 'rgba(255,190,218,' + (0.11 * open).toFixed(3) + ')');
+    gl.addColorStop(1, 'rgba(255,170,205,0)');
+    g.fillStyle = gl;
+    g.beginPath(); g.arc(0, 0, 62, 0, TAU); g.fill();
+  }
+  // 花萼（未开时露出的深色小托）
+  if (open < 0.34) {
+    g.save();
+    g.globalAlpha = 0.5 * (1 - open / 0.34);
+    g.fillStyle = '#6d4252';
+    g.beginPath(); g.ellipse(0, len * 0.30, wid * 0.52, len * 0.26, 0, 0, TAU); g.fill();
+    g.restore();
+  }
+  for (let i = 0; i < 5; i++) {
+    const a = -Math.PI / 2 + (i - 2) * spread + Math.sin(i * 2.3) * 0.05;
+    g.save();
+    g.rotate(a + Math.PI / 2);
+    const grad = g.createLinearGradient(0, 0, 0, -len);
+    grad.addColorStop(0, tone.base);
+    grad.addColorStop(0.45, tone.mid);
+    grad.addColorStop(1, isBud ? tone.mid : tone.tip);
+    g.fillStyle = grad;
+    g.globalAlpha = 0.97;
+    petalPath(g, len, wid, open);
+    g.fill();
+    g.lineWidth = 0.8;
+    g.strokeStyle = 'rgba(255,255,255,0.26)';
+    g.stroke();
+    g.restore();
+  }
+  if (open > 0.26) {
+    const r = 2 + open * 5.5;
+    const cg = g.createRadialGradient(0, 0, 0, 0, 0, r * 2.3);
+    cg.addColorStop(0, 'rgba(255,247,216,0.98)');
+    cg.addColorStop(0.45, 'rgba(249,213,128,0.85)');
+    cg.addColorStop(1, 'rgba(240,180,90,0)');
+    g.fillStyle = cg;
+    g.beginPath(); g.arc(0, 0, r * 2.3, 0, TAU); g.fill();
+    for (let k = 0; k < 9; k++) {
+      const ang = (k / 9) * TAU + 0.3;
+      const l = r * (0.95 + 0.4 * open);
+      g.strokeStyle = 'rgba(198,118,64,0.5)';
+      g.lineWidth = 0.7;
+      g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(ang) * l, Math.sin(ang) * l); g.stroke();
+      g.fillStyle = 'rgba(255,240,186,0.95)';
+      g.beginPath(); g.arc(Math.cos(ang) * l, Math.sin(ang) * l, 0.9, 0, TAU); g.fill();
+    }
+    g.fillStyle = 'rgba(214,120,150,0.85)';
+    g.beginPath(); g.arc(0, 0, r * 0.5, 0, TAU); g.fill();
+  }
+}
+
+function makeFlowerSprites() {
+  return TONES.map((tone) => {
+    const arr = [];
+    for (let s = 0; s < STAGES; s++) {
+      const open = s / (STAGES - 1);
+      const c = document.createElement('canvas');
+      c.width = c.height = SPR;
+      const g = c.getContext('2d');
+      g.translate(SPR / 2, SPR / 2);
+      drawFlower(g, tone, open);
+      arr.push(c);
+    }
+    return arr;
+  });
+}
+
+function makePetalSprites() {
+  const out = [];
+  TONES.forEach((tone) => {
+    for (let v = 0; v < 2; v++) {
+      const size = 96;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const g = c.getContext('2d');
+      g.translate(size / 2, size / 2);
+      const len = 30 + v * 3;
+      const wid = len * 0.42;
+      const grad = g.createLinearGradient(0, 0, 0, -len);
+      grad.addColorStop(0, tone.base);
+      grad.addColorStop(0.5, tone.mid);
+      grad.addColorStop(1, tone.tip);
+      g.fillStyle = grad;
+      g.globalAlpha = 0.96;
+      petalPath(g, len, wid, 1);
+      g.fill();
+      g.strokeStyle = 'rgba(255,255,255,0.3)';
+      g.lineWidth = 1;
+      g.stroke();
+      out.push(c);
+    }
+  });
+  return out;
+}
+
+function makeGlowSprite() {
+  const size = 96;
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  grad.addColorStop(0, 'rgba(255,236,214,0.95)');
+  grad.addColorStop(0.35, 'rgba(255,214,200,0.35)');
+  grad.addColorStop(1, 'rgba(255,200,200,0)');
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  return c;
+}
+
+/* =========================================================================
+   2. 背景：黄昏天空、月、远山、薄雾、光斑
+   ========================================================================= */
+function buildBackground() {
+  const { W, H, dpr } = S;
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(W * dpr));
+  c.height = Math.max(1, Math.round(H * dpr));
+  const g = c.getContext('2d');
+  g.scale(dpr, dpr);
+  const rng = mulberry32(90210);
+  const horizon = H * 0.805;
+
+  const sky = g.createLinearGradient(0, 0, 0, horizon + 4);
+  sky.addColorStop(0, '#100a1d');
+  sky.addColorStop(0.30, '#241230');
+  sky.addColorStop(0.55, '#4a1e3c');
+  sky.addColorStop(0.78, '#8b3f56');
+  sky.addColorStop(0.92, '#c4736f');
+  sky.addColorStop(1, '#e8a184');
+  g.fillStyle = sky;
+  g.fillRect(0, 0, W, horizon + 4);
+
+  // 星
+  for (let i = 0; i < 110; i++) {
+    const x = rng() * W;
+    const y = rng() * horizon * 0.62;
+    const a = (1 - y / (horizon * 0.7)) * (0.10 + rng() * 0.5);
+    g.fillStyle = 'rgba(255,240,235,' + a.toFixed(3) + ')';
+    g.beginPath(); g.arc(x, y, rng() * 1.2 + 0.25, 0, TAU); g.fill();
+  }
+
+  // 月
+  const mx = W * 0.775, my = H * 0.245, mr = Math.min(W, H) * 0.031;
+  const halo = g.createRadialGradient(mx, my, mr * 0.6, mx, my, mr * 7);
+  halo.addColorStop(0, 'rgba(255,238,216,0.26)');
+  halo.addColorStop(0.28, 'rgba(255,210,196,0.09)');
+  halo.addColorStop(1, 'rgba(255,190,180,0)');
+  g.fillStyle = halo;
+  g.beginPath(); g.arc(mx, my, mr * 7, 0, TAU); g.fill();
+  const mg = g.createRadialGradient(mx - mr * 0.32, my - mr * 0.36, mr * 0.1, mx, my, mr);
+  mg.addColorStop(0, '#fffdf9');
+  mg.addColorStop(0.72, '#ffeede');
+  mg.addColorStop(1, '#f2c6b8');
+  g.fillStyle = mg;
+  g.beginPath(); g.arc(mx, my, mr, 0, TAU); g.fill();
+
+  // 远山（两层）
+  const ridge = (baseY, amp, color, seed) => {
+    const r = mulberry32(seed);
+    g.beginPath();
+    g.moveTo(-20, H);
+    g.lineTo(-20, baseY);
+    let x = -20;
+    while (x < W + 80) {
+      const step = 90 + r() * 160;
+      const y = baseY - (r() * amp + Math.sin(x / W * 4.2 + seed) * amp * 0.35);
+      g.quadraticCurveTo(x + step * 0.45, y, x + step, baseY - r() * amp * 0.25);
+      x += step;
+    }
+    g.lineTo(W + 40, baseY);
+    g.lineTo(W + 40, H);
+    g.closePath();
+    g.fillStyle = color;
+    g.fill();
+  };
+  ridge(horizon - H * 0.012, H * 0.055, 'rgba(52,26,48,0.85)', 7);
+  ridge(horizon + H * 0.004, H * 0.028, 'rgba(30,14,28,0.95)', 31);
+
+  // 地平线暖光
+  const warm = g.createRadialGradient(W * 0.52, horizon, 10, W * 0.52, horizon, W * 0.62);
+  warm.addColorStop(0, 'rgba(255,180,150,0.30)');
+  warm.addColorStop(0.4, 'rgba(255,150,140,0.10)');
+  warm.addColorStop(1, 'rgba(255,120,140,0)');
+  g.fillStyle = warm;
+  g.fillRect(0, 0, W, horizon + 40);
+
+  // 地面
+  const ground = g.createLinearGradient(0, horizon - 2, 0, H);
+  ground.addColorStop(0, '#22131f');
+  ground.addColorStop(0.32, '#1a0e19');
+  ground.addColorStop(1, '#0a060d');
+  g.fillStyle = ground;
+  g.fillRect(0, horizon - 2, W, H - horizon + 2);
+
+  // 地平线上的薄雾，柔化交界
+  const haze = g.createLinearGradient(0, horizon - H * 0.06, 0, horizon + H * 0.07);
+  haze.addColorStop(0, 'rgba(255,186,178,0)');
+  haze.addColorStop(0.42, 'rgba(255,192,184,0.13)');
+  haze.addColorStop(1, 'rgba(255,180,180,0)');
+  g.fillStyle = haze;
+  g.fillRect(0, horizon - H * 0.06, W, H * 0.13);
+
+  // 薄雾
+  for (let i = 0; i < 5; i++) {
+    const y = horizon - 10 + i * 9;
+    const gr = g.createLinearGradient(0, y - 24, 0, y + 26);
+    gr.addColorStop(0, 'rgba(255,190,190,0)');
+    gr.addColorStop(0.5, 'rgba(255,196,190,' + (0.05 - i * 0.007).toFixed(3) + ')');
+    gr.addColorStop(1, 'rgba(255,190,190,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, y - 24, W, 50);
+  }
+
+  // 光斑（bokeh）
+  const bokeh = (x, y, r, color, a) => {
+    const gr = g.createRadialGradient(x, y, 0, x, y, r);
+    gr.addColorStop(0, color.replace('A', a.toFixed(3)));
+    gr.addColorStop(0.55, color.replace('A', (a * 0.55).toFixed(3)));
+    gr.addColorStop(1, color.replace('A', '0'));
+    g.fillStyle = gr;
+    g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+  };
+  for (let i = 0; i < 26; i++) {
+    const x = rng() * W;
+    const y = H * 0.35 + rng() * H * 0.6;
+    const r = 8 + rng() * 42;
+    const warmC = rng() < 0.62;
+    bokeh(x, y, r, warmC ? 'rgba(255,214,180,A)' : 'rgba(255,170,205,A)', 0.02 + rng() * 0.05);
+  }
+
+  S.bg = c;
+}
+
+/* =========================================================================
+   3. 樱花树：程序化分形枝条 + 花簇
+   ========================================================================= */
+const MAX_FLOWERS = 720;
+
+function buildTree() {
+  const { W, H } = S;
+  const rng = mulberry32(0x51c0de);
+  S.branches = [];
+  const groundY = H * 0.868;
+  const baseX = W * (0.47 + (rng() - 0.5) * 0.03);
+  // 树的大小：宽屏时更高更开展，竖屏时保持占满画面
+  const trunkLen = clamp(W * 0.26, H * 0.26, H * 0.32);
+  const trunkW = Math.max(11, Math.min(W * 0.022, H * 0.026));
+  const candidates = [];
+  const pushCand = (x, y, mul) => {
+    if (candidates.length < 4200) candidates.push({ x, y, mul, tone: rng() });
+  };
+
+  function grow(x, y, ang, len, w, depth) {
+    const curve = (rng() - 0.5) * 0.5;
+    const ex = x + Math.cos(ang) * len;
+    const ey = y + Math.sin(ang) * len;
+    const nx = Math.cos(ang + Math.PI / 2);
+    const ny = Math.sin(ang + Math.PI / 2);
+    const cx = (x + ex) / 2 + nx * len * curve;
+    const cy = (y + ey) / 2 + ny * len * curve;
+    S.branches.push({ x, y, cx, cy, ex, ey, w0: w, w1: w * 0.62, depth, ang });
+
+    // 细枝上直接开花
+    if (w < 8.0 && w > 1.2) {
+      const n = 1 + Math.floor(rng() * 3);
+      for (let i = 0; i < n; i++) {
+        const t = 0.18 + rng() * 0.82;
+        const p = qPoint(x, y, cx, cy, ex, ey, t);
+        const off = (rng() - 0.5) * (w * 2.4 + 12);
+        pushCand(p.x + nx * off, p.y + ny * off, 0.72 + rng() * 0.5);
+      }
+    }
+
+    // 枝梢花簇
+    if (depth <= 0 || w < 1.15) {
+      const n = 3 + Math.floor(rng() * 3);
+      for (let i = 0; i < n; i++) {
+        pushCand(ex + (rng() - 0.5) * 18, ey + (rng() - 0.5) * 18, 0.84 + rng() * 0.5);
+      }
+      return;
+    }
+    const kids = w > 10 ? 3 : (rng() < 0.5 ? 2 : 3);
+    for (let i = 0; i < kids; i++) {
+      const off = (i - (kids - 1) / 2) * 0.68 + (rng() - 0.5) * 0.34;
+      const t = 0.34 + rng() * 0.62;
+      const p = qPoint(x, y, cx, cy, ex, ey, t);
+      const na = ang + off * (0.78 + rng() * 0.45) + (rng() - 0.5) * 0.1;
+      grow(p.x, p.y, na, len * (0.63 + rng() * 0.18), Math.max(w * 0.55, 1.0), depth - 1);
+    }
+  }
+
+  // 根
+  const roots = [[-0.9, 0.20], [-0.42, 0.12], [0.45, 0.13], [0.95, 0.22]];
+  for (const [dir, lf] of roots) {
+    const p = qPoint(baseX, groundY, baseX + dir * W * 0.06, groundY + H * 0.02, baseX + dir * W * 0.09, groundY + H * 0.012, 0.9);
+    S.branches.push({
+      x: baseX, y: groundY, cx: baseX + dir * W * 0.05, cy: groundY + H * 0.03,
+      ex: p.x, ey: p.y, w0: trunkW * lf * 2.2, w1: trunkW * lf * 0.5, depth: 8, ang: 0, root: true,
+    });
+  }
+
+  grow(baseX, groundY + 4, -Math.PI / 2 + 0.05, trunkLen, trunkW, 7);
+
+  // 候选花位可能远多于上限 —— 打散后均匀取一部分，避免花朵全挤在一侧
+  if (candidates.length > MAX_FLOWERS) {
+    for (let i = candidates.length - 1; i > 0; i--) {
+      const j = (rng() * (i + 1)) | 0;
+      const tmp = candidates[i]; candidates[i] = candidates[j]; candidates[j] = tmp;
+    }
+  }
+  const chosen = candidates.length > MAX_FLOWERS ? candidates.slice(0, MAX_FLOWERS) : candidates;
+  S.flowers = chosen.map((c) => ({
+    x: c.x, y: c.y,
+    rot: rng() * TAU,
+    scale: (H * 0.00027) * c.mul * (0.85 + rng() * 0.55),
+    tone: c.tone < 0.2 ? 1 : c.tone < 0.62 ? 0 : 2,
+    delay: Math.pow(rng(), 1.35) * 0.55,
+    phase: rng() * TAU,
+    alpha: 0.86 + rng() * 0.14,
+  }));
+  S.treeBase = { x: baseX, groundY, trunkLen };
+}
+
+function drawBranch(g, b) {
+  const N = 14;
+  const pts = [];
+  const nors = [];
+  const w0 = b.root ? b.w0 : b.w0;
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const p = qPoint(b.x, b.y, b.cx, b.cy, b.ex, b.ey, t);
+    const d = qTangent(b.x, b.y, b.cx, b.cy, b.ex, b.ey, t);
+    const l = Math.hypot(d.x, d.y) || 1;
+    pts.push(p);
+    nors.push({ x: -d.y / l, y: d.x / l });
+  }
+  const wAt = (t) => lerp(b.w0, b.w1, t) / 2;
+  g.beginPath();
+  for (let i = 0; i <= N; i++) {
+    const p = pts[i], n = nors[i], w = wAt(i / N);
+    const x = p.x + n.x * w, y = p.y + n.y * w;
+    if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+  }
+  for (let i = N; i >= 0; i--) {
+    const p = pts[i], n = nors[i], w = wAt(i / N);
+    g.lineTo(p.x - n.x * w, p.y - n.y * w);
+  }
+  g.closePath();
+  g.fillStyle = b.root ? '#1a0f17' : b.depth >= 4 ? '#241621' : '#2a1a26';
+  g.fill();
+  g.strokeStyle = 'rgba(255,200,210,0.10)';
+  g.lineWidth = 1;
+  g.stroke();
+  // 粗枝上的一点高光
+  if (b.w0 > 7) {
+    g.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const p = pts[i], n = nors[i], w = wAt(i / N) * 0.45;
+      const x = p.x + n.x * w, y = p.y + n.y * w;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.strokeStyle = 'rgba(255,214,220,0.10)';
+    g.lineWidth = 1.4;
+    g.stroke();
+  }
+}
+
+function renderTree() {
+  const { W, H, dpr } = S;
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(W * dpr));
+  c.height = Math.max(1, Math.round(H * dpr));
+  const g = c.getContext('2d');
+  g.scale(dpr, dpr);
+  const rng = mulberry32(4242);
+  const groundY = S.treeBase ? S.treeBase.groundY : H * 0.868;
+  const baseX = S.treeBase ? S.treeBase.x : W * 0.46;
+
+  // 地面阴影
+  const sh = g.createRadialGradient(baseX, groundY + H * 0.01, 4, baseX, groundY + H * 0.01, W * 0.3);
+  sh.addColorStop(0, 'rgba(8,3,10,0.50)');
+  sh.addColorStop(0.6, 'rgba(8,3,10,0.18)');
+  sh.addColorStop(1, 'rgba(8,3,10,0)');
+  g.fillStyle = sh;
+  g.beginPath(); g.ellipse(baseX, groundY + H * 0.012, W * 0.3, H * 0.055, 0, 0, TAU); g.fill();
+
+  // 枝条
+  for (const b of S.branches) drawBranch(g, b);
+
+  // 地上落瓣
+  const petals = S.sprites ? S.sprites.petals : [];
+  if (petals.length) {
+    for (let i = 0; i < 48; i++) {
+      const x = baseX + (rng() - 0.5) * W * 0.40;
+      const y = groundY + 3 + rng() * H * 0.075;
+      const spr = petals[(rng() * petals.length) | 0];
+      const sc = 0.10 + rng() * 0.10;
+      g.save();
+      g.translate(x, y);
+      g.rotate(rng() * TAU);
+      g.globalAlpha = 0.14 + rng() * 0.16;
+      g.drawImage(spr, -48 * sc, -48 * sc, 96 * sc, 96 * sc);
+      g.restore();
+    }
+  }
+  S.tree = c;
+}
+
+/* =========================================================================
+   4. 光照 / 氛围贴图
+   ========================================================================= */
+function buildLight() {
+  const { W, H } = S;
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, W);
+  c.height = Math.max(1, H);
+  const g = c.getContext('2d');
+  const warm = g.createRadialGradient(W * 0.82, H * 0.10, 20, W * 0.82, H * 0.10, W * 0.75);
+  warm.addColorStop(0, 'rgba(255,216,178,0.55)');
+  warm.addColorStop(0.35, 'rgba(255,186,170,0.18)');
+  warm.addColorStop(1, 'rgba(255,170,170,0)');
+  g.fillStyle = warm;
+  g.fillRect(0, 0, W, H);
+  S.light = c;
+
+  // 树冠柔光（随花开变亮）
+  const gl = document.createElement('canvas');
+  gl.width = gl.height = 256;
+  const gg = gl.getContext('2d');
+  const rad = gg.createRadialGradient(128, 128, 0, 128, 128, 128);
+  rad.addColorStop(0, 'rgba(255,214,224,0.60)');
+  rad.addColorStop(0.42, 'rgba(255,186,200,0.20)');
+  rad.addColorStop(1, 'rgba(255,170,190,0)');
+  gg.fillStyle = rad;
+  gg.fillRect(0, 0, 256, 256);
+  S.canopyGlow = gl;
+}
+
+/* =========================================================================
+   5. 粒子：花瓣 / 光尘
+   ========================================================================= */
+function localBloom(f, B) {
+  const d = f.delay;
+  const lb = d >= 0.999 ? 1 : clamp((B - d) / (1 - d), 0, 1);
+  return lb * lb * (3 - 2 * lb);
+}
+
+function spawnPetal(fromFlower, opts) {
+  if (S.petals.length > 460) return;
+  opts = opts || {};
+  let x, y, tone, size;
+  if (fromFlower) {
+    x = fromFlower.x + (Math.random() - 0.5) * 10;
+    y = fromFlower.y + (Math.random() - 0.5) * 10;
+    tone = fromFlower.tone;
+    size = 0.30 + Math.random() * 0.30;
+  } else {
+    x = opts.x !== undefined ? opts.x : Math.random() * S.W;
+    y = opts.y !== undefined ? opts.y : Math.random() * S.H * 0.5;
+    tone = (Math.random() * 3) | 0;
+    size = 0.26 + Math.random() * 0.26;
+  }
+  const sprite = S.sprites.petals[tone * 2 + ((Math.random() < 0.5) ? 0 : 1)];
+  S.petals.push({
+    x, y,
+    vx: (Math.random() - 0.5) * 26 + (opts.vx || 0),
+    vy: -8 - Math.random() * 20 + (opts.vy || 0),
+    rot: Math.random() * TAU,
+    vr: (Math.random() - 0.5) * 2.4,
+    size,
+    sprite,
+    phase: Math.random() * TAU,
+    alpha: 0.92,
+    landed: false,
+  });
+}
+
+function burstPetals(n) {
+  const bloomed = S.flowers.filter((f) => localBloom(f, S.bloom) > 0.35);
+  for (let i = 0; i < n; i++) {
+    if (bloomed.length && Math.random() < 0.8) {
+      spawnPetal(bloomed[(Math.random() * bloomed.length) | 0], { vx: (Math.random() - 0.5) * 60, vy: -Math.random() * 30 });
+    } else {
+      spawnPetal(null, { y: S.H * (0.1 + Math.random() * 0.35) });
+    }
+  }
+}
+
+function initMotes() {
+  S.motes = [];
+  for (let i = 0; i < 42; i++) {
+    S.motes.push({
+      x: Math.random() * S.W,
+      y: Math.random() * S.H,
+      r: 1.2 + Math.random() * 3.6,
+      vy: -4 - Math.random() * 12,
+      phase: Math.random() * TAU,
+      speed: 0.2 + Math.random() * 0.5,
+      a: 0.15 + Math.random() * 0.5,
+    });
+  }
+}
+
+/* =========================================================================
+   6. 主循环
+   ========================================================================= */
+function update(dt) {
+  const h = S.hand;
+
+  if (S.mode === 'camera') {
+    const fresh = h.present && S.t - h.lastSeen < 0.45;
+    if (fresh) {
+      const open = h.smooth;
+      S.target = smoothstep(0.20, 0.82, open);
+      if (open < 0.30) S.target = 0;
+    }
+  } else if (S.mode === 'mouse' && S.pointerTarget !== null) {
+    S.target = S.pointerTarget;
+  } else if (S.mode === 'demo') {
+    // 无人操作时自动演示：先满开，再慢慢落花，循环往复
+    const v = 0.5 + 0.5 * Math.sin(S.t * 0.13 + 1.6);
+    S.target = 0.12 + 0.86 * smoothstep(0, 1, v);
+  }
+
+  const k = S.target > S.bloom ? 1.12 : 1.95;
+  S.bloom += (S.target - S.bloom) * (1 - Math.exp(-dt * k));
+  S.bloom = clamp(S.bloom, 0, 1);
+
+  // 花落：花瓣从花上脱落
+  let rate = 0;
+  if (S.target < S.bloom - 0.015) rate += 190 * (S.bloom - S.target);
+  if (S.mode === 'camera' && h.present && h.smooth < 0.3) rate += 18;
+  if (S.wind > 0.25) rate += S.wind * 9;
+  S.petalAcc += rate * dt;
+  let guard = 0;
+  while (S.petalAcc >= 1 && guard++ < 60) {
+    S.petalAcc -= 1;
+    const bloomed = [];
+    for (let i = 0; i < S.flowers.length; i++) {
+      const f = S.flowers[i];
+      if (localBloom(f, S.bloom) > 0.3) bloomed.push(f);
+    }
+    if (bloomed.length) spawnPetal(bloomed[(Math.random() * bloomed.length) | 0]);
+    S.petalAcc = Math.max(0, S.petalAcc);
+  }
+
+  S.wind *= Math.exp(-dt * 1.15);
+  if (S.wind < 0.001) S.wind = 0;
+
+  const groundY = S.H * 0.888;
+  for (let i = S.petals.length - 1; i >= 0; i--) {
+    const p = S.petals[i];
+    if (p.landed) {
+      p.alpha -= dt * 0.55;
+      p.vx *= 0.92;
+      p.x += p.vx * dt;
+      p.vy = 0;
+    } else {
+      p.vy = Math.min(p.vy + (30 + p.size * 70) * dt, 120);
+      p.vx += (S.wind * 34 + Math.sin(S.t * 1.6 + p.phase) * 26) * dt;
+      p.vx *= 1 - 0.55 * dt;
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.rot += p.vr * dt;
+      if (p.y > groundY) { p.landed = true; p.y = groundY + Math.random() * 8; p.vr *= 0.2; }
+    }
+    if (p.alpha <= 0 || p.x < -120 || p.x > S.W + 120 || p.y > S.H + 80) S.petals.splice(i, 1);
+  }
+
+  for (const m of S.motes) {
+    m.y += m.vy * dt;
+    m.x += Math.sin(S.t * 0.5 + m.phase) * 6 * dt;
+    if (m.y < -20) { m.y = S.H + 20; m.x = Math.random() * S.W; }
+  }
+}
+
+function draw() {
+  const { W, H } = S;
+  ctx.globalAlpha = 1;
+  ctx.drawImage(S.bg, 0, 0, W, H);
+
+  // 夜／晨的氛围：花开越盛越暖
+  if (S.light) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = clamp(0.10 + 0.55 * S.bloom, 0, 0.72);
+    ctx.drawImage(S.light, 0, 0, W, H);
+    ctx.restore();
+  }
+
+  ctx.drawImage(S.tree, 0, 0, W, H);
+
+  drawFlowers();
+
+  // 树冠的柔光
+  if (S.canopyGlow && S.treeBase) {
+    const r = S.treeBase.trunkLen * 1.6;
+    const cx = S.treeBase.x;
+    const cy = S.treeBase.groundY - S.treeBase.trunkLen * 1.35;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = 0.04 + 0.17 * S.bloom;
+    ctx.drawImage(S.canopyGlow, cx - r, cy - r, r * 2, r * 2);
+    ctx.restore();
+  }
+
+  drawMotes();
+  drawPetals();
+
+  // 花落时整幅画面偏冷、偏暗一点
+  const cold = (1 - S.bloom);
+  if (cold > 0.02) {
+    ctx.fillStyle = 'rgba(22,10,40,' + (cold * 0.20).toFixed(3) + ')';
+    ctx.fillRect(0, 0, W, H);
+  }
+}
+
+function drawFlowers() {
+  const B = S.bloom;
+  const sprites = S.sprites.flowers;
+  for (let i = 0; i < S.flowers.length; i++) {
+    const f = S.flowers[i];
+    const lb = localBloom(f, B);
+    const st = (lb * (STAGES - 1)) | 0;
+    const spr = sprites[f.tone][st];
+    const sway = Math.sin(S.t * 0.85 + f.phase) * 0.045;
+    const sc = f.scale * (0.80 + 0.20 * lb);
+    ctx.save();
+    ctx.translate(f.x, f.y);
+    ctx.rotate(f.rot + sway);
+    ctx.globalAlpha = f.alpha * (0.9 + 0.1 * lb);
+    ctx.drawImage(spr, -64 * sc, -64 * sc, 128 * sc, 128 * sc);
+    ctx.restore();
+  }
+}
+
+function drawPetals() {
+  for (let i = 0; i < S.petals.length; i++) {
+    const p = S.petals[i];
+    const flutter = 0.5 + 0.5 * Math.abs(Math.sin(S.t * 2.1 + p.phase));
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.rot);
+    ctx.scale(0.42 + flutter * 0.58, 1);
+    ctx.globalAlpha = p.alpha;
+    const s = p.size;
+    ctx.drawImage(p.sprite, -48 * s, -48 * s, 96 * s, 96 * s);
+    ctx.restore();
+  }
+}
+
+function drawMotes() {
+  const spr = S.sprites.glow;
+  for (let i = 0; i < S.motes.length; i++) {
+    const m = S.motes[i];
+    const a = m.a * (0.25 + 0.75 * S.bloom) * (0.6 + 0.4 * Math.sin(S.t * 1.4 + m.phase));
+    if (a <= 0.012) continue;
+    ctx.globalAlpha = a;
+    const r = m.r * 6;
+    ctx.drawImage(spr, m.x - r, m.y - r, r * 2, r * 2);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function render(now) {
+  requestAnimationFrame(render);
+  if (!S.ready) return;
+  const dt = S.lastFrame ? Math.min(0.05, Math.max(0.0001, (now - S.lastFrame) / 1000)) : 0.016;
+  S.lastFrame = now;
+  S.t += dt;
+  update(dt);
+  draw();
+  drawPreview();
+  updateHUD(now);
+}
+
+/* =========================================================================
+   7. HUD
+   ========================================================================= */
+function updateHUD(now) {
+  if (now - S.lastHud < 90) return;
+  S.lastHud = now;
+  DOM.bloomBar.style.width = (S.bloom * 100).toFixed(1) + '%';
+  DOM.bloomNum.textContent = Math.round(S.bloom * 100) + '%';
+
+  const h = S.hand;
+  const open = h.present ? h.smooth : 0;
+  const filled = Math.round(open * 5);
+  for (let i = 0; i < DOM.openDots.length; i++) DOM.openDots[i].classList.toggle('on', i < filled);
+
+  if (!S.cameraOn) {
+    DOM.gestIcon.textContent = '🖐';
+    DOM.gestText.textContent = S.mode === 'mouse' ? '鼠标控制中' : '等待手势';
+  } else if (!h.present || S.t - h.lastSeen > 0.5) {
+    DOM.gestIcon.textContent = '👀';
+    DOM.gestText.textContent = '未检测到手';
+  } else if (open < 0.30) {
+    DOM.gestIcon.textContent = '✊';
+    DOM.gestText.textContent = '握拳 · 花落';
+  } else if (open > 0.68) {
+    DOM.gestIcon.textContent = '🖐';
+    DOM.gestText.textContent = '张开手掌 · 花开';
+  } else {
+    DOM.gestIcon.textContent = '✋';
+    DOM.gestText.textContent = '半开 · 缓缓绽放';
+  }
+}
+
+function setCamState(state, text) {
+  DOM.camDot.className = 'dot' + (state ? ' ' + state : '');
+  DOM.camText.textContent = text || { off: '摄像头未开启', loading: '正在连接摄像头…', model: '正在加载手势模型…', ready: '手势识别中', error: '摄像头不可用' }[state] || '';
+  if (DOM.prevDot) {
+    DOM.prevDot.className = 'd' + (state === 'ready' ? '' : ' wait');
+  }
+  if (DOM.btnCam2) {
+    DOM.btnCam2.textContent = S.cameraOn ? '关闭' : '摄像头';
+  }
+}
+
+function showToast(msg, ms) {
+  DOM.toast.textContent = msg;
+  DOM.toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => DOM.toast.classList.remove('show'), ms || 3200);
+}
+
+/* =========================================================================
+   8. 手势识别（MediaPipe Hands）
+   ========================================================================= */
+const MP_META = { version: '0.4.1675469240', base: null, hands: null };
+const CDN_BASES = [
+  'https://cdn.npmmirror.com/packages/@mediapipe/hands/' + MP_META.version + '/files/',
+  'https://unpkg.com/@mediapipe/hands@' + MP_META.version + '/',
+  'https://cdn.jsdelivr.net/npm/@mediapipe/hands@' + MP_META.version + '/',
+];
+
+function probeUrl(url, ms) {
+  return new Promise((resolve) => {
+    if (!window.fetch) return resolve(false);
+    const ctl = new AbortController();
+    const timer = setTimeout(() => { ctl.abort(); resolve(false); }, ms || 2500);
+    fetch(url, { method: 'HEAD', signal: ctl.signal, cache: 'no-store' })
+      .then((r) => { clearTimeout(timer); resolve(!!r.ok); })
+      .catch(() => { clearTimeout(timer); resolve(false); });
+  });
+}
+
+function loadScript(src, ms) {
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    const timer = setTimeout(() => { s.remove(); reject(new Error('timeout ' + src)); }, ms || 15000);
+    s.onload = () => { clearTimeout(timer); resolve(); };
+    s.onerror = () => { clearTimeout(timer); s.remove(); reject(new Error('load fail ' + src)); };
+    document.head.appendChild(s);
+  });
+}
+
+async function loadHandsLib() {
+  const bases = [];
+  if (location.protocol === 'http:' || location.protocol === 'https:') {
+    const local = new URL('./mediapipe/', location.href).href;
+    if (await probeUrl(local + 'hands.js')) bases.push(local);
+  }
+  bases.push(...CDN_BASES);
+  let lastErr = null;
+  for (const base of bases) {
+    try {
+      await loadScript(base + 'hands.js', 15000);
+      if (typeof window.Hands !== 'function') throw new Error('Hands 未就绪');
+      return base;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error('手势模型加载失败');
+}
+
+function fingerOpen(lms, a, b, c) {
+  const v1x = lms[a].x - lms[b].x, v1y = lms[a].y - lms[b].y;
+  const v2x = lms[c].x - lms[b].x, v2y = lms[c].y - lms[b].y;
+  const d1 = Math.hypot(v1x, v1y) || 1e-6;
+  const d2 = Math.hypot(v2x, v2y) || 1e-6;
+  const cos = clamp((v1x * v2x + v1y * v2y) / (d1 * d2), -1, 1);
+  const ang = (Math.acos(cos) * 180) / Math.PI;
+  return clamp((ang - 95) / (168 - 95), 0, 1);
+}
+
+/** 由 21 个手部关键点计算"张开度" 0=握拳 1=五指全开 */
+function computeOpenness(lms) {
+  const palm = Math.hypot(lms[0].x - lms[9].x, lms[0].y - lms[9].y) || 1e-6;
+  let sum = 0;
+  const chains = [
+    [5, 6, 7, 8],
+    [9, 10, 11, 12],
+    [13, 14, 15, 16],
+    [17, 18, 19, 20],
+  ];
+  for (const c of chains) {
+    sum += fingerOpen(lms, c[0], c[1], c[2]) * 0.55 + fingerOpen(lms, c[1], c[2], c[3]) * 0.45;
+  }
+  let angleOpen = sum / 4;
+  const thumb = fingerOpen(lms, 1, 2, 3);
+  angleOpen = angleOpen * 0.92 + thumb * 0.08;
+
+  // 指尖到掌心（9 号点）的距离 / 掌宽：五指张开时约 0.9~1.1，握拳时约 0.2~0.4
+  let tipSum = 0;
+  for (const tip of [8, 12, 16, 20]) {
+    tipSum += Math.hypot(lms[tip].x - lms[9].x, lms[tip].y - lms[9].y) / palm;
+  }
+  const distOpen = clamp((tipSum / 4 - 0.25) / 0.60, 0, 1);
+  return clamp(angleOpen * 0.75 + distOpen * 0.25, 0, 1);
+}
+
+function feedLandmarks(lms) {
+  const h = S.hand;
+  if (!h.smoothLms) h.smoothLms = lms.map((p) => ({ x: p.x, y: p.y, z: p.z || 0 }));
+  else for (let i = 0; i < 21; i++) {
+    const a = h.smoothLms[i], b = lms[i];
+    a.x = lerp(a.x, b.x, 0.45);
+    a.y = lerp(a.y, b.y, 0.45);
+  }
+  const raw = computeOpenness(lms);
+  const wasPresent = h.present;
+  h.present = true;
+  h.raw = raw;
+  if (!wasPresent) h.smooth = raw;
+  else h.smooth += (raw - h.smooth) * 0.34;
+
+  const cx = (lms[0].x + lms[5].x + lms[9].x + lms[13].x + lms[17].x) / 5;
+  const cy = (lms[0].y + lms[5].y + lms[9].y + lms[13].y + lms[17].y) / 5;
+  const now = S.t;
+  if (h.lastSeenT > 0) {
+    const dt = Math.max(0.02, now - h.lastSeenT);
+    h.vx = (cx - h.lastX) / dt;
+    h.vy = (cy - h.lastY) / dt;
+    const speed = Math.hypot(h.vx, h.vy);
+    if (speed > 1.15 && now - h.lastGustAt > 0.28) {
+      h.lastGustAt = now;
+      S.wind = Math.min(2.6, S.wind + Math.min(1.1, speed * 0.22));
+      if (speed > 1.9) burstPetals(10);
+    }
+  }
+  h.lastX = cx;
+  h.lastY = cy;
+  h.lastSeenT = now;
+  h.lastSeen = now;
+
+  const fist = h.smooth < 0.28 && raw < 0.45;
+  if (fist && !h.fist && now - h.lastFistAt > 0.5) {
+    h.lastFistAt = now;
+    burstPetals(14);
+    S.wind = Math.min(2.2, S.wind + 0.45);
+  }
+  h.fist = fist;
+}
+
+function onHandResults(res) {
+  const arr = res.multiHandLandmarks;
+  if (arr && arr.length) {
+    feedLandmarks(arr[0]);
+  } else {
+    if (S.hand.present) S.hand.missingSince = S.t;
+    S.hand.present = false;
+    S.hand.fist = false;
+    S.hand.lastSeenT = 0;
+  }
+}
+
+/* ---------------- 摄像头 ---------------- */
+async function startCamera() {
+  if (S.cameraOn || S.cameraStarting) return;
+  S.cameraStarting = true;
+  hideIntro();
+  setCamState('loading');
+  DOM.veil.classList.add('show');
+  DOM.veilText.textContent = '正在请求摄像头权限…';
+  try {
+    // 直接双击打开的 file:// 页面，Chrome/Edge 一律不给摄像头
+    if (location.protocol === 'file:') throw new Error('insecure');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('insecure');
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user', frameRate: { ideal: 30, max: 30 } },
+    });
+    S.stream = stream;
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    videoEl.srcObject = stream;
+    // 等第一帧真正到达，避免预览黑屏
+    await new Promise((resolve) => {
+      if (videoEl.readyState >= 2) return resolve();
+      const done = () => {
+        videoEl.removeEventListener('loadeddata', done);
+        videoEl.removeEventListener('canplay', done);
+        clearTimeout(timer);
+        resolve();
+      };
+      const timer = setTimeout(done, 2600);
+      videoEl.addEventListener('loadeddata', done);
+      videoEl.addEventListener('canplay', done);
+    });
+    try {
+      await videoEl.play();
+    } catch (e) {
+      setTimeout(() => { videoEl.play().catch(() => {}); }, 260);
+    }
+    S.cameraOn = true;
+    S.mode = 'camera';
+    DOM.camCard.classList.add('show');
+
+    DOM.veilText.textContent = '正在加载手势模型…';
+    if (!MP_META.hands) {
+      const base = await loadHandsLib();
+      MP_META.base = base;
+      const hands = new window.Hands({ locateFile: (f) => base + f });
+      hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.6,
+        minTrackingConfidence: 0.55,
+        selfieMode: false,
+      });
+      hands.onResults(onHandResults);
+      await hands.initialize();
+      MP_META.hands = hands;
+    }
+    setCamState('ready');
+    DOM.veil.classList.remove('show');
+    showToast('手势已就绪 —— 张开手掌试试 🌸', 3600);
+    S.paused = false;
+    pump();
+  } catch (err) {
+    DOM.veil.classList.remove('show');
+    stopCamera();
+    handleCameraError(err);
+  } finally {
+    S.cameraStarting = false;
+  }
+}
+
+function stopCamera() {
+  S.cameraOn = false;
+  S.paused = true;
+  cancelAnimationFrame(S.rafSend);
+  if (S.stream) {
+    S.stream.getTracks().forEach((t) => t.stop());
+    S.stream = null;
+  }
+  videoEl.srcObject = null;
+  S.hand.present = false;
+  S.hand.fist = false;
+  S.mode = 'mouse';
+  S.pointerTarget = S.pointerTarget === null ? 0.5 : S.pointerTarget;
+  DOM.camCard.classList.remove('show');
+  setCamState('off');
+}
+
+function handleCameraError(err) {
+  const name = err && err.name ? err.name : '';
+  const msg = String((err && err.message) || err || '');
+  if (name === 'NotAllowedError' || name === 'SecurityError') {
+    showToast('摄像头权限被拒绝。点地址栏左侧的摄像头图标可以重新允许，或先用鼠标模式。', 5200);
+    setCamState('error', '摄像头权限被拒绝');
+  } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
+    showToast('没有找到可用的摄像头，先用鼠标模式玩玩吧。', 4600);
+    setCamState('error', '未找到摄像头');
+  } else if (name === 'NotReadableError') {
+    showToast('摄像头被其他程序占用了，关掉其它正在用摄像头的软件再试。', 4800);
+    setCamState('error', '摄像头被占用');
+  } else if (msg === 'insecure' || !window.isSecureContext) {
+    if (location.protocol === 'file:') {
+      DOM.fileTip.classList.add('show');
+      setCamState('error', '需要本地服务器');
+    } else {
+      showToast('摄像头需要 https 或 localhost 环境。请用「启动樱花.cmd」打开，或部署到 https 域名。', 6400);
+      setCamState('error', '需要 https 或 localhost');
+    }
+  } else if (msg.indexOf('模型') >= 0 || msg.indexOf('Hands') >= 0 || msg.indexOf('load') >= 0 || msg.indexOf('timeout') >= 0) {
+    showToast('手势模型加载失败：请确认 sakura/mediapipe 文件夹完整，或联网后重试。可以先使用鼠标模式。', 6000);
+    setCamState('error', '模型加载失败');
+  } else {
+    showToast('摄像头启动失败：' + msg, 5000);
+    setCamState('error', '摄像头启动失败');
+  }
+  S.mode = 'mouse';
+}
+
+async function pump() {
+  if (!S.cameraOn || !MP_META.hands || S.paused) return;
+  const v = videoEl;
+  if (v.readyState >= 2 && v.videoWidth) {
+    try { await MP_META.hands.send({ image: v }); } catch (e) { /* 单帧失败忽略 */ }
+  }
+  if (!S.cameraOn || S.paused) return;
+  S.rafSend = requestAnimationFrame(pump);
+}
+
+/* ---------------- 摄像头预览 ---------------- */
+const HAND_CONNECTIONS = [
+  [0, 1], [1, 2], [2, 3], [3, 4],
+  [0, 5], [5, 6], [6, 7], [7, 8],
+  [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16],
+  [13, 17], [17, 18], [18, 19], [19, 20], [0, 17],
+];
+function drawPreview() {
+  if (!S.cameraOn || !DOM.camCard.classList.contains('show')) return;
+  const w = previewEl.width, h = previewEl.height;
+  previewCtx.clearRect(0, 0, w, h);
+  previewCtx.fillStyle = '#120a12';
+  previewCtx.fillRect(0, 0, w, h);
+  if (videoEl.readyState >= 2 && videoEl.videoWidth) {
+    previewCtx.save();
+    previewCtx.translate(w, 0);
+    previewCtx.scale(-1, 1);
+    previewCtx.drawImage(videoEl, 0, 0, w, h);
+    previewCtx.restore();
+  }
+  const lms = S.hand.present ? S.hand.smoothLms : null;
+  if (lms) {
+    previewCtx.lineWidth = 2.4;
+    previewCtx.strokeStyle = 'rgba(255,180,210,0.9)';
+    previewCtx.shadowColor = 'rgba(255,150,195,0.9)';
+    previewCtx.shadowBlur = 7;
+    previewCtx.beginPath();
+    for (const [a, b] of HAND_CONNECTIONS) {
+      previewCtx.moveTo((1 - lms[a].x) * w, lms[a].y * h);
+      previewCtx.lineTo((1 - lms[b].x) * w, lms[b].y * h);
+    }
+    previewCtx.stroke();
+    previewCtx.shadowBlur = 0;
+    for (let i = 0; i < lms.length; i++) {
+      previewCtx.fillStyle = i % 4 === 0 ? 'rgba(255,240,180,0.95)' : 'rgba(255,255,255,0.9)';
+      previewCtx.beginPath();
+      previewCtx.arc((1 - lms[i].x) * w, lms[i].y * h, i === 0 ? 3.4 : 2.3, 0, TAU);
+      previewCtx.fill();
+    }
+    // 张开度小条
+    previewCtx.fillStyle = 'rgba(0,0,0,0.45)';
+    previewCtx.fillRect(8, h - 16, w - 16, 7);
+    previewCtx.fillStyle = 'rgba(255,175,205,0.95)';
+    previewCtx.fillRect(8, h - 16, (w - 16) * S.hand.smooth, 7);
+  } else {
+    previewCtx.fillStyle = 'rgba(255,235,243,0.75)';
+    previewCtx.font = '12px "Microsoft YaHei UI", sans-serif';
+    previewCtx.textAlign = 'center';
+    previewCtx.fillText('把手放进画面里', w / 2, h / 2 + 4);
+    DOM.prevText.textContent = '等待手…';
+    return;
+  }
+  DOM.prevText.textContent = S.hand.fist ? '✊ 握拳' : S.hand.smooth > 0.68 ? '🖐 张开' : '✋ 半开';
+}
+
+/* =========================================================================
+   9. 交互：鼠标 / 键盘 / 按钮
+   ========================================================================= */
+function hideIntro() {
+  if (!S.introOpen) return;
+  S.introOpen = false;
+  DOM.intro.classList.add('hidden');
+}
+
+function enableMouseMode() {
+  hideIntro();
+  S.mode = 'mouse';
+  S.pointerTarget = S.pointerTarget === null ? 0.55 : S.pointerTarget;
+  showToast('鼠标上下移动控制花开，点一下就能撒花瓣 🖱', 4200);
+}
+
+function bindUI() {
+  document.getElementById('btnCam').addEventListener('click', () => startCamera());
+  document.getElementById('btnCam2').addEventListener('click', () => {
+    if (S.cameraOn) { stopCamera(); showToast('摄像头已关闭，切回鼠标控制'); }
+    else startCamera();
+  });
+  document.getElementById('btnMouse').addEventListener('click', enableMouseMode);
+  document.getElementById('btnHelp2').addEventListener('click', () => DOM.help.classList.add('show'));
+  document.getElementById('btnHelpClose').addEventListener('click', () => DOM.help.classList.remove('show'));
+  DOM.help.addEventListener('click', (e) => { if (e.target === DOM.help) DOM.help.classList.remove('show'); });
+  document.getElementById('btnFileHelp').addEventListener('click', () => DOM.fileTip.classList.add('show'));
+  document.getElementById('btnFileTipClose').addEventListener('click', () => DOM.fileTip.classList.remove('show'));
+  document.getElementById('btnFileTipHelp').addEventListener('click', () => {
+    DOM.fileTip.classList.remove('show');
+    DOM.help.classList.add('show');
+  });
+  DOM.fileTip.addEventListener('click', (e) => { if (e.target === DOM.fileTip) DOM.fileTip.classList.remove('show'); });
+  document.getElementById('btnPrev').addEventListener('click', () => {
+    if (!S.cameraOn) { showToast('先开启摄像头，才能看到预览'); return; }
+    DOM.camCard.classList.toggle('show');
+  });
+  document.getElementById('btnCamHide').addEventListener('click', () => DOM.camCard.classList.remove('show'));
+
+  window.addEventListener('pointermove', (e) => {
+    if (S.cameraOn || S.introOpen) return;
+    if (e.pointerType === 'touch') return;
+    S.mode = 'mouse';
+    const y = e.clientY / Math.max(1, window.innerHeight);
+    S.pointerTarget = clamp(1.04 - y * 1.14, 0, 1);
+  }, { passive: true });
+
+  window.addEventListener('pointerdown', (e) => {
+    if (S.introOpen) return;
+    if (e.target && e.target.closest && e.target.closest('button')) return;
+    if (S.cameraOn) return;
+    S.mode = 'mouse';
+    burstPetals(16);
+    S.wind = Math.min(2.4, S.wind + 0.6);
+  });
+
+  let touchStartY = null;
+  window.addEventListener('touchstart', (e) => {
+    if (S.cameraOn || S.introOpen) return;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  window.addEventListener('touchmove', (e) => {
+    if (S.cameraOn || S.introOpen || touchStartY === null) return;
+    S.mode = 'mouse';
+    const y = e.touches[0].clientY / Math.max(1, window.innerHeight);
+    S.pointerTarget = clamp(1.04 - y * 1.14, 0, 1);
+  }, { passive: true });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (S.introOpen) return;
+      S.mode = 'mouse';
+      S.pointerTarget = clamp((S.pointerTarget === null ? S.bloom : S.pointerTarget) + (e.key === 'ArrowUp' ? 0.09 : -0.09), 0, 1);
+    } else if (e.code === 'Space') {
+      e.preventDefault();
+      if (S.introOpen) return;
+      burstPetals(26);
+      S.wind = Math.min(2.6, S.wind + 0.9);
+    } else if (e.key === 'c' || e.key === 'C') {
+      if (S.cameraOn) stopCamera(); else startCamera();
+    } else if (e.key === 'Escape') {
+      DOM.help.classList.remove('show');
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    clearTimeout(bindUI._rz);
+    bindUI._rz = setTimeout(() => {
+      resizeScene();
+      buildScene();
+    }, 200);
+  });
+}
+
+/* =========================================================================
+   10. 初始化
+   ========================================================================= */
+function resizeScene() {
+  S.dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+  S.W = Math.max(320, window.innerWidth);
+  S.H = Math.max(320, window.innerHeight);
+  canvas.width = Math.round(S.W * S.dpr);
+  canvas.height = Math.round(S.H * S.dpr);
+  canvas.style.width = S.W + 'px';
+  canvas.style.height = S.H + 'px';
+  ctx.setTransform(S.dpr, 0, 0, S.dpr, 0, 0);
+  ctx.clearRect(0, 0, S.W, S.H);
+}
+
+function buildScene() {
+  buildBackground();
+  buildTree();
+  renderTree();
+  buildLight();
+  initMotes();
+}
+
+function boot() {
+  resizeScene();
+  S.sprites = {
+    flowers: makeFlowerSprites(),
+    petals: makePetalSprites(),
+    glow: makeGlowSprite(),
+  };
+  buildScene();
+  bindUI();
+  setCamState('off');
+
+  if (location.protocol === 'file:' || !window.isSecureContext) {
+    DOM.fileBanner.classList.add('show');
+    setTimeout(() => DOM.fileBanner.classList.remove('show'), 22000);
+  }
+
+  S.ready = true;
+  S.lastFrame = performance.now();
+  requestAnimationFrame(render);
+}
+
+/* ---------------- 调试 / 自动化测试接口 ---------------- */
+window.__SAKURA__ = {
+  S,
+  computeOpenness,
+  feed: (lms) => feedLandmarks(lms),
+  detectImage: (img) => detectImage(img),
+  startCamera,
+  pause: () => { S.paused = true; cancelAnimationFrame(S.rafSend); },
+  resume: () => { if (S.cameraOn) { S.paused = false; pump(); } },
+  burst: (n) => burstPetals(n || 20),
+  setBloom: (v) => {
+    S.bloom = clamp(v, 0, 1);
+    S.target = S.bloom;
+    S.pointerTarget = S.bloom;
+    S.mode = 'mouse';
+  },
+  setTarget: (v) => { S.target = clamp(v, 0, 1); },
+  status: () => ({
+    mode: S.mode,
+    camera: S.cameraOn,
+    model: !!MP_META.hands,
+    bloom: +S.bloom.toFixed(3),
+    target: +S.target.toFixed(3),
+    openness: +S.hand.smooth.toFixed(3),
+    hand: !!S.hand.present,
+    fist: !!S.hand.fist,
+    petals: S.petals.length,
+    flowers: S.flowers.length,
+    wind: +S.wind.toFixed(2),
+    base: MP_META.base,
+  }),
+};
+
+function detectImage(img) {
+  return new Promise((resolve) => {
+    if (!MP_META.hands) return resolve({ error: 'model-not-ready' });
+    const hands = MP_META.hands;
+    let done = false;
+    const finish = (payload) => {
+      if (done) return;
+      done = true;
+      hands.onResults(onHandResults);
+      resolve(payload);
+    };
+    hands.onResults((res) => {
+      const lms = res.multiHandLandmarks || [];
+      finish({
+        count: lms.length,
+        openness: lms.length ? +computeOpenness(lms[0]).toFixed(3) : null,
+        landmarks: lms[0] || null,
+      });
+    });
+    try {
+      hands.send({ image: img });
+    } catch (e) {
+      finish({ error: String(e) });
+    }
+    setTimeout(() => finish({ error: 'timeout' }), 10000);
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
